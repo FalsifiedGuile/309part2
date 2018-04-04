@@ -32,6 +32,11 @@ ol, ul {
   width: 34px;
 }
 
+#error {
+    border: 0px;
+    width: 300px;
+}
+
 .square:focus {
   outline: none;
 }
