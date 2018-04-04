@@ -17,14 +17,6 @@ const url = 'mongodb://choinic1:02552@mcsdb.utm.utoronto.ca:27017/choinic1_309';
 // Database Name
 const dbName = 'choinic1_309';
 
-// Use connect method to connect to the server
-/*
-MongoClient.connect(url, function(err, client) {
-  assert.equal(null, err);
-  console.log("Connected successfully to server");
-  const db = client.db(dbName);
-  // client.close();
-}); */
 
 // https://expressjs.com/en/starter/static-files.html
 app.use(express.static('static-content'));
@@ -56,16 +48,6 @@ app.post('/api/checkuser/:name/', function(req, res, next) {
 
 	  client.close();
 	});
-
-
-	/*
-	MongoClient.connect(url, function(err, db) {
-		assert.equal(null, err);
-		var result = db.collection('users').find({name: {exists: true, $in:[''+username]}});
-		if (result != null) {
-			console.log("POST:CheckExists:NotNull!");
-		}
-	}); */ 
 
 });
 

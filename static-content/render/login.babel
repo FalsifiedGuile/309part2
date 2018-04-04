@@ -80,8 +80,6 @@ class Main extends React.Component {
     this.onUserChange = this.onUserChange.bind(this);
     this.onPassChange = this.onPassChange.bind(this);
     this.onEmailChange = this.onEmailChange.bind(this);
-    this.regRequest = this.regRequest.bind(this);
-    //this.registerUserRequest = this.registerUserRequest.bind(this);
   }
 
   onUserChange(e) {
