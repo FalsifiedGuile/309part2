@@ -1,34 +1,8 @@
-class Login extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {username: props.username, hashpass: props.hashpass};
-    this.changeUserField = this.changeUserField.bind(this);
-    this.changePassField = this.changePassField.bind(this);
-  }
-
-  changeUserField(e) {
-    this.setState({username: e.target.value});
-  }
-
-  changePassField(e) {
-    this.setState({password: e.target.value});
-  }
-
-  render(props) {
-    return (
-      <div>
-        <h3>Login</h3>
-        <form>
-          Username: <br/>
-          <input type="text" name="user" onChange={this.changeUserField} value ={this.state.username}/> <br/>
-          Password: <br/>
-          <input type="text" name="pass" onChange={this.changePassField} value ={this.state.hashpass}/> <br/><br/>
-        </form>
-      </div>
-    );
-  }
-}
-
+// Storage of Users in Global JS Dictionary.
+var users = {};
+// Pre-generated User for Checking & Debugging.
+users['nick'] = {'password': '123', 'email': '', 'scores': []};
+users['ray'] = {'password': 'dong', 'email': '', 'scores': [5, 2, 9]};
 
 class Register extends React.Component {
   constructor(props) {
@@ -41,15 +15,14 @@ class Register extends React.Component {
         <h3>Register</h3>
         <form>
           Username: <br/>
-          <input type="text" name="user" value = ''/> <br/>
+          <input type="text" name="user" value={this.props.username} onChange={this.props.onUserChange}/> <br/>
           Password: <br/>
-          <input type="text" name="pass" value = ''/> <br/><br/>
+          <input type="password" name="pass" value={this.props.hashpass} onChange={this.props.onPassChange}/> <br/><br/>
         </form>
       </div>
     );
   }
 }
-
 
 class Profile extends React.Component {
   constructor(props) {
@@ -62,52 +35,126 @@ class Profile extends React.Component {
         <h3>Profile</h3>
         <form>
           Username: <br/>
-          <input type="text" name="user" value = ''/> <br/>
+          <input type="text" name="user" value = {this.props.username} readOnly/> <br/>
           Password: <br/>
-          <input type="text" name="pass" value = ''/> <br/>
+          <input type="password" name="pass" value = {this.props.hashpass} onChange={this.props.onPassChange}/> <br/>
           Email: <br/>
-          <input type="text" name="pass" value = ''/> <br/>
+          <input type="text" name="pass" value = {this.props.email} onChange={this.props.onEmailChange}/> <br/>
           Top Score: <br/>
-          <input type="text" name="pass" value = ''/> <br/><br/>
+          <input type="text" name="pass" value = {this.props.score} readOnly/> <br/><br/>
         </form>
       </div>
     );
   }
 }
 
+class Login extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render(props) {
+    return (
+      <div>
+        <h3>Login</h3>
+        <form>
+          Username: <br/>
+          <input type="text" name="user" value={this.props.username} onChange={this.props.onUserChange}/> <br/>
+          Password: <br/>
+          <input type="password" name="pass" value={this.props.hashpass} onChange={this.props.onPassChange}/> <br/><br/>
+        </form>
+      </div>
+    );
+  }
+}
 
 class Main extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {view: 'login', username: 'a', hashpass: 'a', email: '', topscore: ''};
+    this.state = {view: 'login', username: '', hashpass: '', email: '', topscore: '', msg: ''};
     this.loginClick = this.loginClick.bind(this);
     this.toRegisterClick = this.toRegisterClick.bind(this);
     this.registerClick = this.registerClick.bind(this);
     this.toLoginClick = this.toLoginClick.bind(this);
+    this.profileClick = this.profileClick.bind(this);
+    this.onUserChange = this.onUserChange.bind(this);
+    this.onPassChange = this.onPassChange.bind(this);
+    this.onEmailChange = this.onEmailChange.bind(this);
+  }
+
+  onUserChange(e) {
+    this.setState({username: e.target.value });
+  }
+
+  onPassChange(e) {
+    this.setState({hashpass: e.target.value });
+  }
+
+  onEmailChange(e) {
+    this.setState({email: e.target.value });
   }
 
   loginClick() {
-    alert("Logged In!");
+    // Invalid Input: If Username Or Password field are empty.
+    if ((this.state.username == '') || (this.state.hashpass == '')) {
+      alert("Invalid Input: User/Pass Missing");
+    }
+    // If User doesn't exist as a Key in Users Dictionary.
+    else if (!(this.state.username in users)) {
+      alert("User doesn't exist!");
+    }
+    // If User exists in Users Dictionary, but Password is not the same.
+    else if ((this.state.username in users) && (users[this.state.username]['password'] != this.state.hashpass)) {
+      alert("Password in incorrect!");
+    }
+    // Otherwise, we switch view to Profile.
+    else {
+      this.setState({'view': 'profile'});
+      // To set highest score as topscore.
+      if (users[this.state.username]['scores'].length == 0) {
+        this.setState({'topscore': '0'});
+      }
+      else {
+        var max = 0;
+        var i = 0;
+        for (i; i < users[this.state.username]['scores'].length; i++) {
+          if (users[this.state.username]['scores'][i] > max) {
+            max = users[this.state.username]['scores'][i];
+          }
+        }
+        this.setState({'topscore': ''+max});
+      }
+    }
   }
 
   toRegisterClick() {
-    this.setState({view: 'register'});
+    this.setState({view: 'register', 'username': '', 'hashpass': ''});
   }
 
   registerClick() {
-    alert("Registered!");
+    // Invalid Input: If Username Or Password field are empty.
+    if ((this.state.username == '') || (this.state.hashpass == '')) {
+      alert("Invalid Input: User/Pass Missing");
+    }
+    // If User already exists as a Key in Users Dictionary.
+    else if (this.state.username in users) {
+      alert("User already exists!");
+    }
+    // Otherwise, we create the User.
+    else{
+      users[this.state.username] = {'password': this.state.hashpass, 'email': '', 'scores': []};
+      alert("Successfully Registered!");
+    }
   }
 
   toLoginClick() {
-    this.setState({view: 'login'});
+    this.setState({view: 'login', 'username': '', 'password': ''});
   }
 
   profileClick() {
-    alert("Updated!");
-  }
-
-  changeUsername(newUser) {
-    this.setState({username: newUser});
+    users[this.state.username]['password'] = this.state.hashpass;
+    users[this.state.username]['email'] = this.state.email;
+    alert("Successfully Updated!");
   }
 
   render(props) {
@@ -124,17 +171,17 @@ class Main extends React.Component {
 
     // To swap between views based on state.
     if (this.state.view == 'login') {
-      currentView = <Login username={this.state.username} hashpass={this.state.hashpass} changeUsername={this.changeUsername.bind(this)}/>;
+      currentView = <Login username={this.state.username} hashpass={this.state.hashpass} onUserChange={this.onUserChange} onPassChange={this.onPassChange}/>;
       loginButton = <LoginButton onClick={this.loginClick} />;
       toRegister = <ToRegister onClick={this.toRegisterClick} />;
     }
     else if (this.state.view == 'register') {
-      currentView = <Register />;
+      currentView = <Register username={this.state.username} hashpass={this.state.hashpass} onUserChange={this.onUserChange} onPassChange={this.onPassChange}/>;
       registerButton = <RegisterButton onClick={this.registerClick} />;
       toLogin = <ToLogin onClick={this.toLoginClick} />;
     }
     else if (this.state.view == 'profile') {
-      currentView = <Profile />;
+      currentView = <Profile username={this.state.username} hashpass={this.state.hashpass} email={this.state.email} score={this.state.topscore} onPassChange={this.onPassChange} onEmailChange={this.onEmailChange}/>;
       profileButton = <UpdateProfileButton onClick={this.profileClick} />;
       logoutButton = <LogoutButton onClick={this.toLoginClick} />;
     }
@@ -151,7 +198,7 @@ class Main extends React.Component {
           {registerButton}
           {toLogin}
           {profileButton}
-          {logoutButton}
+          {logoutButton} <br/><br/>
         </div>
       );
   }
