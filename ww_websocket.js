@@ -1,24 +1,18 @@
 require('./port');
 
-require("jquery").env("", function(err, window) {
-    if (err) {
-        console.error(err);
-        return;
-    }
-
-    var $ = require("jquery")(window);
-});
+// Load jsdom, and create a window.
 var webSocketPort = port+1;
 
 var express = require('express');
 var app = express();
-
+var open = [1, 4, 5, 6];
+var inuse = [];
 // Game code
 var gameStep=null;
 var stage=null;
-var interval=1000;
-var level=[];
-
+var interval=1500;
+var level;
+var gameStarted =0;
 
 // static_files has all of statically returned content
 // https://expressjs.com/en/starter/static-files.html
@@ -28,14 +22,14 @@ var WebSocketServer = require('ws').Server
    ,wss = new WebSocketServer({port: webSocketPort}),  LOBBY=[];
 
 var messages=[];
-
+var fs = require('fs');
 wss.on('close', function() {
     console.log('disconnected');
 });
 
 wss.broadcast = function(message){
 	for(let ws of this.clients){
-		ws.send(stage);
+		ws.send(message);
 	}
 
 	// Alternatively
@@ -44,10 +38,19 @@ wss.broadcast = function(message){
 
 wss.on('connection', function(ws) {
   LOBBY.push(ws);
+  var spawnLoc = open.pop();
+  console.log(open);
+  inuse.push(spawnLoc);
+  var spawnjson = {'jsonType': "init", 'player_location': spawnLoc, 'usr_id': 'lul'};
+  ws.send(JSON.stringify(spawnjson));
 	var i;
   console.log("New User Connected");
   //console.log(LOBBY);
-
+  if (gameStarted == 0){
+    gameStarted = 1;
+    readStage();
+    //startGame();
+  }
   //for(i=0;i<messages.length;i++){
 		//ws.send(messages[i]);
 	//}
@@ -65,23 +68,37 @@ wss.on('connection', function(ws) {
 });
 //game loop
 
-$(function(){
-  setupGame();
-  startGame();
-});
 
 function setupGame(){
   stage=new Stage(20,20,"stage");
   stage.initialize();
-  $.get("static-content/stage/s1.txt", function(data) {
-   level = data.split('\n');
-   stage.loadLevel(level);
- });
+  stage.loadLevel(level);
+//  $.get("static-content/stage/s1.txt", function(data) {
+   //level = data.split('\n');
+   //stage.loadLevel(level);
+ //});
+ startGame();
+}
+
+function readStage(){
+  var txtFile = "static-content/stage/s1.txt"
+  fs.readFile(txtFile, 'utf8', function(err, contents) {
+      //console.log(contents);
+      level = contents.split('\n');
+      level.pop();
+      setupGame();
+  });
+
+//  $.get("static-content/stage/s1.txt", function(data) {
+   //level = data.split('\n');
+   //stage.loadLevel(level);
+ //});
 }
 function startGame(){
   broadcastStage();
   gameStep = setInterval(function(){ mobsMove() }, interval);
 }
+
 function mobsMove(){
   console.log("tick once");
   if (stage.step() == "win"){
@@ -89,36 +106,24 @@ function mobsMove(){
     winner();
     return;
   }
-  if (stage.step() == "gameover"){
+  else if (stage.step() == "gameover"){
     gameover();
     return;
   }
   broadcastStage();
 }
-function winner(){
-  var img = document.createElement("img");
-  img.src = "http://i.imgur.com/rkxeQPC.gif";
-  if(img && img.style) {
-      img.style.height = '800px';
-      img.style.width = '1000px';
-  }
-  $('#stage').html(img);
-}
-function gameover(){
-  pauseGame();
-  var img = document.createElement("img");
-  img.src = "http://moziru.com/images/deadth-clipart-transparent-14.png";
-  if(img && img.style) {
-      img.style.height = '800px';
-      img.style.width = '1000px';
-  }
-  $('#stage').html(img);
-}
+
 
 function broadcastStage(){
-  wss.broadcast(encodeStage());
+  var encodedStage = encodeStage();
+  wss.broadcast(JSON.stringify(encodedStage));
 };
-
+function intialize_player(j, i){
+  //if (inputline[j] == 'p'){
+    //this.player = new player("player", "player", j, i, 1);
+    //this.setActor(this.player);
+  //}
+}
 // Stage
 // Note: Yet another way to declare a class, using .prototype.
 
@@ -171,10 +176,10 @@ Stage.prototype.loadLevel=function(level){
 				this.monsters.push(newDevil);
 				this.setActor(newDevil);
 			}
-			if (inputline[j] == 'p'){
-				this.player = new player("player", "player", j, i, 1);
-				this.setActor(this.player);
-			}
+      if (inputline[j] == 'p'){
+        this.player = new player("player", "player", j, i, 1);
+        this.setActor(this.player);
+      }
 			if (inputline[j] == 's'){
 				newSlime = new slime("slime", "monster", j, i);
 				this.monsters.push(newSlime);
@@ -186,40 +191,39 @@ Stage.prototype.loadLevel=function(level){
 }
 
 function encodeStage (){
-  var stageJSON = {"stage":[]};
+  stageArray=[];
+
   for (var i = 0; i < 20; i++)
   {
-    var newRow = row.clone();
-    tableBody.append(newRow);
     for (var j = 0; j < 20; j++){
-      var yLocation = y*20;
-    	var xLocation = x;
+      var yLocation = j*20;
+    	var xLocation = i;
 
     	var convertedLocation = yLocation + xLocation;
-      switch (this.actors[convertedLocation].getName()) {
+      switch (stage.actors[convertedLocation].getName()) {
         case "player":
-          stage["stage"].append("p");
+          stageArray.push("p");
           break;
         case "devil":
-          stage["stage"].append("d");
+          stageArray.push("d");
           break;
         case "wall":
-          stage["stage"].append("w");
+          stageArray.push("w");
           break;
         case "box":
-          stage["stage"].append("b");
+          stageArray.push("b");
           break;
         case "slime":
-          stage["stage"].append("s");
+          stageArray.push("s");
           break;
         default:
-          stage["stage"].append("0");
+          stageArray.push("a");
           break;
       }
 
     }
-    console.log("done");
   }
+  var stageJSON = {'jsonType': "stage", "stage":stageArray};
   return stageJSON;
 }
 
@@ -315,7 +319,6 @@ mob.prototype.checkStatus=function(stage){
 			}
 		}
 	}
-	console.log(wallsAround);
 	if (wallsAround == 9){
 		this.status = 0;
 		var index = stage.monsters.indexOf(this);
@@ -336,7 +339,7 @@ mob.prototype.getValidMove=function(stage){
 	var yb=this.yCord + 2;
 	var xa=this.xCord - 1;
 	var xb=this.xCord + 2;
-
+  //console.log(validMoves);
 	for(var y=ya;y<yb;y++){
 		for(var x=xa;x<xb;x++){
 			if(stage.getActor(x,y).getType() == "blank" || stage.getActor(x,y).getType() == "player"){
@@ -344,6 +347,8 @@ mob.prototype.getValidMove=function(stage){
 			}
 		}
 	}
+  //console.log(this.xCord + ", " + this.yCord)
+  //console.log(validMoves);
 	return validMoves;
 }
 // End of mob Class
@@ -365,6 +370,7 @@ devil.prototype.move=function(stage) {
   	return;
 	}
 	var moveNumber = Math.floor((Math.random() * (validMoves.length)));
+  //console.log("move number is" + moveNumber)
 	var yLocation = this.yCord*20;
 	var xLocation = this.xCord;
 	var convertedLocation = yLocation + xLocation;
@@ -375,6 +381,7 @@ devil.prototype.move=function(stage) {
 	}
 	this.xCord = validMoves[moveNumber][0];
 	this.yCord = validMoves[moveNumber][1];
+  //console.log("moved to" + validMoves[moveNumber][0] + ", " + validMoves[moveNumber][1])
 	stage.setActor(this);
 }
 // End of devil Class
