@@ -104,6 +104,59 @@ app.post('/api/register/:name/', function(req, res, next) {
 	});
 });
 
+// Post: Update User Profile.
+app.post('/api/update/:name/', function(req, res, next) {
+	// Passed in User Parameters.
+	var username = req.body.name;
+	var password = req.body.pass;
+	var newemail = req.body.email;
+	// Console Log Description (Server/Terminal).
+	console.log("Post: Updating: "+username);
+
+	// Connect to MongoDB.
+	MongoClient.connect(url, function(err, client) {
+	  assert.equal(null, err);
+	  const db = client.db(dbName);
+
+	  // Checking User Existance.
+	  db.collection('users').update({name: username}, {$set: {pass: password, email: newemail}}, function(err, result) {
+	  	assert.equal(null, err);
+	  	var result = {};
+	  	result[req.body.name] = "updated rows";
+	  	console.log(JSON.stringify(result));
+		res.json(result);
+	  });
+
+	  client.close();
+	});
+});
+
+// Post: Get Email.
+app.post('/api/getemail/:name/', function(req, res, next) {
+	// Passed in User Parameters.
+	var username = req.body.name;
+	// Console Log Description (Server/Terminal).
+	console.log("Post: Getting Email: "+username);
+
+	// Connect to MongoDB.
+	MongoClient.connect(url, function(err, client) {
+	  assert.equal(null, err);
+	  const db = client.db(dbName);
+
+	  // Checking User Existance.
+	  /*
+	  db.collection('users').update({name: username}, {$set: {pass: password, email: newemail}}, function(err, result) {
+	  	assert.equal(null, err);
+	  	var result = {};
+	  	result[req.body.name] = "updated rows";
+	  	console.log(JSON.stringify(result));
+		res.json(result);
+	  }); */
+
+	  client.close();
+	});
+});
+
 app.listen(port, function () {
   	console.log('Example app listening on port '+port);
 });

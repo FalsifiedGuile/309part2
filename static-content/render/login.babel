@@ -102,6 +102,7 @@ class Main extends React.Component {
     }
     // Otherwise, we query to MongoDB.
     else {
+      // Login Route.
       $.ajax({
           url: '/api/login/'+this.state.username,
           method: 'POST',
@@ -114,6 +115,16 @@ class Main extends React.Component {
           else {
             this.setState({msg: 'Incorrect Info!'});
           }
+      }.bind(this));
+
+      // Populate Email Route.
+      $.ajax({
+          url: '/api/getemail/'+this.state.username,
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ name: this.state.username }) 
+      }).done(function(response){
+ 
       }.bind(this));
     }
   }
@@ -162,9 +173,15 @@ class Main extends React.Component {
   }
 
   profileClick() {
-    users[this.state.username]['password'] = this.state.hashpass;
-    users[this.state.username]['email'] = this.state.email;
-    alert("Successfully Updated!");
+    $.ajax({
+        url: '/api/update/'+this.state.username,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ name: this.state.username, pass: this.state.hashpass, email: this.state.email }) 
+    }).done(function(response){
+        this.setState({msg: 'Successfully Updated!'});
+        console.log(JSON.stringify(response));
+    }.bind(this));
   }
 
   render(props) {
