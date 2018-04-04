@@ -61,7 +61,6 @@
 					var cell = $(document.createElement('td')).html(img);
 					newRow.append(cell.clone());
 				}
-				console.log("done");
 			}
 			$('#stage').html(tableBody);
 		}
@@ -72,7 +71,10 @@
 			var maxNumber = 1000;
 			var socket;
 			var usr_id = -1;
-
+			window.onbeforeunload = sendCloseConn;
+			function sendCloseConn() {
+			    socket.send(JSON.stringify({'jsonType':'closeConn','id':usr_id}));
+			}
 
 
 			$(function(){
@@ -82,30 +84,34 @@
 					$('#sendButton').removeAttr('disabled');
 					console.log("connected");
 				};
+
 				socket.onclose = function (event) {
-					alert("closed code:" + event.code + " reason:" +event.reason + " wasClean:"+event.wasClean);
+					//alert("closed code:" + event.code + " reason:" +event.reason + " wasClean:"+event.wasClean);
+					socket.send(JSON.stringify({'id':usr_id}));
 				};
 				socket.onmessage = function (event) {
 					var jsonThing=JSON.parse(event.data);
-					if (jsonThing.jsonType == 'stage'){
-						var stageArray = jsonThing.stage;
-						renderStage(stageArray);
-					}
-					if (jsonThing.jsonType == 'init') {
-						console.log("USER spawn: " + jsonThing.player_id);
-						usr_id = jsonThing.player_id;
-					}
+
 					if (jsonThing.jsonType == 'gg') {
+						console.log(jsonThing);
 						console.log("score: " + jsonThing.score);
+						score = jsonThing.score;
 						gameState = jsonThing.gameState;
 						if (gameState == "win"){
 							winner();
 						} else if (gameState == "gameover"){
 							gameover();
 						}
-
-
 					}
+					if (jsonThing.jsonType == 'stage'){
+						var stageArray = jsonThing.stage;
+						renderStage(stageArray);
+					}
+					if (jsonThing.jsonType == 'init') {
+						//console.log("USER spawn: " + jsonThing.player_id);
+						usr_id = jsonThing.player_id;
+					}
+
 
 
 				}
@@ -140,7 +146,7 @@
 						default:
 							return;
 					}
-					socket.send(JSON.stringify({ 'direction': newCord, 'id':usr_id}));
+					socket.send(JSON.stringify({'jsonType':'direction', 'direction': newCord, 'id':usr_id}));
 				});
 
 			});

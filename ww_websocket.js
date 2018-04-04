@@ -14,7 +14,7 @@ var stage=null;
 var stageRendered = 0;
 var interval=1500;
 var level;
-var gameStarted =0;
+var gameStageRendered =0;
 var slime_target_count = 5;
 var slime_current_count = 5;
 var aggroTargetNum = 0;
@@ -22,6 +22,7 @@ var ignore_move = false;
 var gameStartSec = 10;
 var score = 10000;
 var gameBegan = 0;
+var players = [];
 
 // static_files has all of statically returned content
 // https://expressjs.com/en/starter/static-files.html
@@ -34,12 +35,14 @@ var messages=[];
 var fs = require('fs');
 wss.on('close', function() {
     console.log('disconnected');
+    var point=JSON.parse(message);
 });
 
 wss.broadcast = function(message){
 	for(let ws of this.clients){
 		ws.send(message);
 	}
+
 
 	// Alternatively
 	// this.clients.forEach(function (ws){ ws.send(message); });
@@ -49,7 +52,7 @@ function gameStartTimer(){
   if (gameStartSec > 0){
       setTimeout(gameStartTimer, 1000);
   }
-  if (gameStartSec == 0){
+  if (gameStartSec == 0 && gameBegan == 0){
     open = [];
     startGame();
   }
@@ -57,13 +60,12 @@ function gameStartTimer(){
 wss.on('connection', function(ws) {
   LOBBY.push(ws);
   //if (open.length <= 0){
-
   console.log("New User Connected");
   //console.log(LOBBY);
-  if (gameStarted == 0){
+  if (gameStageRendered == 0){
     stage=new Stage(20,20,"stage");
     stage.initialize();
-    gameStarted = 1;
+    gameStageRendered = 1;
     readStage();
     //startGame();
   }
@@ -89,20 +91,53 @@ wss.on('connection', function(ws) {
 
 		// ws.send(message);
     var point=JSON.parse(message);
-    var direction = point["direction"];
-    var clientUsr = point["id"];
-    if(typeof stage.player[clientUsr] !== "undefined" && gameBegan == 1)
-    {
-      stage.player[clientUsr].move(stage, direction, clientUsr);
-      broadcastStage();
+    if (point.jsonType == 'direction'){
+        console.log("direction");
+      var direction = point["direction"];
+      var clientUsr = point["id"];
+      var index = stage.player.indexOf(players[clientUsr]);
+      if (index > -1 && gameBegan == 1) {
+        if (players[clientUsr].move(stage, direction, clientUsr) == "gameover"){
+          gameOver();
+        }else {
+          broadcastStage();
+        }
+
+      }
+    } else if (point.jsonType == 'closeConn'){
+      var clientUsr = point["id"];
+      var isconnected = stage.player.indexOf(stage.player[clientUsr]);
+      if (isconnected >= 0){
+        removePlayerFromStage(stage.player[clientUsr]);
+        if (stage.player.length == 0) {
+          gameOver();
+        }
+      }
     }
-
-    //console.log(point);
-
-		//wss.broadcast(stageJSON);
-	//	messages.push(message);
 	});
 });
+
+function gameOver(){
+  var gg = {'jsonType': "gg", 'gameState': "gameover", 'score': score};
+  wss.broadcast(JSON.stringify(gg));
+  gameBegan = 0;
+}
+
+function removePlayerFromStage(player){
+  var yLocation = player.yCord*20;
+  var xLocation = player.xCord;
+  var convertedLocation = yLocation + xLocation;
+  stage.setActor(stage.blanks[convertedLocation]);
+
+  var index = stage.player.indexOf(player);
+  if (index > -1) {
+    stage.player.splice(index, 1);
+  }
+  console.log("player length" + stage.player.length );
+  if (stage.player.length == 0){
+    return "gameover";
+  }
+}
 //game loop
 function intializeNewPlayer(playerNum){
 
@@ -110,6 +145,7 @@ function intializeNewPlayer(playerNum){
     var yCord = spawncord[playerNum][1];
     new_player = new player("player", "player", xCord, yCord, playerNum)
     stage.player.push(new_player);
+    players.push(new_player);
     //console.log(stage.player);
     stage.setActor(new_player);
 }
@@ -148,9 +184,10 @@ function startGame(){
 }
 
 function mobsMove(){
+    if (gameBegan == 0){return;}
     var d = new Date();
-    console.log(d.getSeconds());
     var gameState = stage.step();
+    console.log("game state" + gameState);
     if (gameState == "win"){
       var gg = {'jsonType': "gg", 'gameState': gameState, 'score': score};
       wss.broadcast(JSON.stringify(gg));
@@ -318,7 +355,6 @@ Stage.prototype.setImage=function(x, y, src){
 
 // Take one step in the animation of the game.
 Stage.prototype.step=function(){
-  console.log("game stepped");
 	if (this.monsters.length > 0){
 		for(var i=0;i<this.monsters.length;i++){
 			if (this.monsters[i].move(this) == "gameover"){
@@ -532,6 +568,11 @@ slime.prototype.move=function(stage) {
   }
 
     for (var i = 0; i<validMoves.length; i++){
+      if(typeof stage.player[aggroTargetNum] == "undefined")
+      {
+        return;
+      }
+      console.log("stage player " + stage.player[aggroTargetNum] + aggroTargetNum);
       var differenceX = Math.abs(validMoves[i][0] - stage.player[aggroTargetNum].getXCord());
       var differenceY = Math.abs(validMoves[i][1] - stage.player[aggroTargetNum].getYCord());
       var  difference = Math.abs(differenceX + differenceY);
@@ -648,13 +689,14 @@ player.prototype.move=function(stage, direction, playerNum){
 			break;
 		case "monster":
     aggroTargetNum = 0;
-    var index = stage.player.indexOf(this);
+      var index = stage.player.indexOf(this);
       if (index > -1) {
         stage.player.splice(index, 1);
       }
-      console.log("player length" + stage.player.length );
   		if (stage.player.length == 0){
+        console.log("gameover");
         return "gameover";
+        gameBegan = 0;
       }
 			return "gameContinued";
 		case "blank":
