@@ -71,7 +71,7 @@ class Login extends React.Component {
 class Main extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {view: 'register', username: '', hashpass: '', email: '', topscore: '', msg: ''};
+    this.state = {view: 'login', username: '', hashpass: '', email: '', topscore: '', msg: ''};
     this.loginClick = this.loginClick.bind(this);
     this.toRegisterClick = this.toRegisterClick.bind(this);
     this.registerClick = this.registerClick.bind(this);
@@ -80,6 +80,7 @@ class Main extends React.Component {
     this.onUserChange = this.onUserChange.bind(this);
     this.onPassChange = this.onPassChange.bind(this);
     this.onEmailChange = this.onEmailChange.bind(this);
+    this.registerUser = this.registerUser.bind(this);
   }
 
   onUserChange(e) {
@@ -97,67 +98,67 @@ class Main extends React.Component {
   loginClick() {
     // Invalid Input: If Username Or Password field are empty.
     if ((this.state.username == '') || (this.state.hashpass == '')) {
-      alert("Invalid Input: User/Pass Missing");
+      this.setState({msg: 'User or Pass Missing!'});
     }
-    // If User doesn't exist as a Key in Users Dictionary.
-    else if (!(this.state.username in users)) {
-      alert("User doesn't exist!");
-    }
-    // If User exists in Users Dictionary, but Password is not the same.
-    else if ((this.state.username in users) && (users[this.state.username]['password'] != this.state.hashpass)) {
-      alert("Password in incorrect!");
-    }
-    // Otherwise, we switch view to Profile.
+    // Otherwise, we query to MongoDB.
     else {
-      this.setState({'view': 'profile'});
-      // To set highest score as topscore.
-      if (users[this.state.username]['scores'].length == 0) {
-        this.setState({'topscore': '0'});
-      }
-      else {
-        var max = 0;
-        var i = 0;
-        for (i; i < users[this.state.username]['scores'].length; i++) {
-          if (users[this.state.username]['scores'][i] > max) {
-            max = users[this.state.username]['scores'][i];
+      $.ajax({
+          url: '/api/login/'+this.state.username,
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ name: this.state.username, pass: this.state.hashpass}) 
+      }).done(function(response){
+          if (response['checklogin'][0] == 1) {
+            this.setState({view: 'profile', msg: ''});
           }
-        }
-        this.setState({'topscore': ''+max});
-      }
+          else {
+            this.setState({msg: 'Incorrect Info!'});
+          }
+      }.bind(this));
     }
   }
 
   toRegisterClick() {
-    this.setState({view: 'register', 'username': '', 'hashpass': ''});
+    this.setState({view: 'register', 'username': '', 'hashpass': '', msg: ''});
   }
 
   registerClick() {
     // Invalid Input: If Username Or Password field are empty.
     if ((this.state.username == '') || (this.state.hashpass == '')) {
-      this.setState({msg: 'Invalid Input: Username or Password Missing!'});
+      this.setState({msg: 'User or Pass Missing!'});
     }
-
+    // Otherwise, we query to MongoDB.
     else {
       $.ajax({
           url: '/api/checkuser/'+this.state.username,
           method: 'POST',
           contentType: 'application/json',
-          data: JSON.stringify({ name: this.state.username }),
-          success: function(response) {
-            if (response['checkreg'][0] == 1) {
-              alert("User already exists!");
-            }
-            else {
-              alert("Still need to do this!");
-            }
+          data: JSON.stringify({ name: this.state.username }) 
+      }).done(function(response){
+          if (response['checkreg'][0] == 1) {
+            this.setState({msg: 'Username Taken!'});
           }
-      });
+          else {
+            this.registerUser();
+          }
+      }.bind(this));
     }
   }
 
+  registerUser() {
+    $.ajax({
+        url: '/api/register/'+this.state.username,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ name: this.state.username, pass: this.state.hashpass }) 
+    }).done(function(response){
+        this.setState({msg: 'Successfully Registered!'});
+        console.log(JSON.stringify(response));
+    }.bind(this));
+  }
+
   toLoginClick() {
-    //this.setState({view: 'login', username: '', hashpass: '', email: '', topscore: ''});
-    this.setState({view: 'login'});
+    this.setState({view: 'login', 'username': '', 'hashpass': '', msg: ''});
   }
 
   profileClick() {

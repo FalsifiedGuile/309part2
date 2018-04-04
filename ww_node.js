@@ -34,7 +34,6 @@ app.post('/api/checkuser/:name/', function(req, res, next) {
 	// Connect to MongoDB.
 	MongoClient.connect(url, function(err, client) {
 	  assert.equal(null, err);
-	  console.log("Connected Successfully To Mongo Server");
 	  const db = client.db(dbName);
 
 	  // Checking User Existance.
@@ -48,7 +47,61 @@ app.post('/api/checkuser/:name/', function(req, res, next) {
 
 	  client.close();
 	});
+});
 
+// Post: Logging In.
+app.post('/api/login/:name/', function(req, res, next) {
+	// Passed in User Parameters.
+	var username = req.body.name;
+	var password = req.body.pass;
+	// Console Log Description (Server/Terminal).
+	console.log("Post: Logging In: "+username);
+
+	// Connect to MongoDB.
+	MongoClient.connect(url, function(err, client) {
+	  assert.equal(null, err);
+	  const db = client.db(dbName);
+
+	  // Checking User Existance.
+	  db.collection('users').find({name: {$exists: true, $in:[username]}, pass: {$exists: true, $in:[password]}}).count(function(e, count) {
+	  	// To return check value.
+	  	var result = {};
+	  	result['checklogin'] = [];
+	  	result['checklogin'].push(count);
+	  	res.json(result);
+	  });
+
+	  client.close();
+	});
+});
+
+// Post: Register User.
+app.post('/api/register/:name/', function(req, res, next) {
+	// Passed in User Parameters.
+	var item = {
+		name: req.body.name,
+		pass: req.body.pass,
+		email: ''
+	};
+	// Console Log Description (Server/Terminal).
+	console.log("Post: Register: "+req.body.name);
+
+	// Connect to MongoDB.
+	MongoClient.connect(url, function(err, client) {
+	  assert.equal(null, err);
+	  const db = client.db(dbName);
+
+	  // Insert User.
+	  db.collection('users').insertOne(item, function(err, result) {
+	  	assert.equal(null, err);
+	  	var result = {};
+	  	result[req.body.name] = "updated rows";
+	  	console.log(JSON.stringify(result));
+		res.json(result);
+	  });
+
+	  client.close();
+	});
 });
 
 app.listen(port, function () {

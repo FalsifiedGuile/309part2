@@ -34,7 +34,7 @@ ol, ul {
 
 #error {
     border: 0px;
-    width: 300px;
+    text-align: center;
 }
 
 .square:focus {
