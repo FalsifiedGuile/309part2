@@ -5,14 +5,20 @@ var webSocketPort = port+1;
 
 var express = require('express');
 var app = express();
-var open = [1, 4, 5, 6];
+var open = [3, 2, 1, 0];
 var inuse = [];
 // Game code
+var spawncord = [[1, 1], [11,11], [12,11], [10, 11]];
 var gameStep=null;
 var stage=null;
+var stageRendered = 0;
 var interval=1500;
 var level;
 var gameStarted =0;
+var slime_target_count = 5;
+var slime_current_count = 5;
+var aggroTargetNum = 0;
+var ignore_move = false;
 
 // static_files has all of statically returned content
 // https://expressjs.com/en/starter/static-files.html
@@ -38,53 +44,77 @@ wss.broadcast = function(message){
 
 wss.on('connection', function(ws) {
   LOBBY.push(ws);
-  var spawnLoc = open.pop();
-  console.log(open);
-  inuse.push(spawnLoc);
-  var spawnjson = {'jsonType': "init", 'player_location': spawnLoc, 'usr_id': 'lul'};
-  ws.send(JSON.stringify(spawnjson));
-	var i;
+  //if (open.length <= 0){
+
   console.log("New User Connected");
   //console.log(LOBBY);
   if (gameStarted == 0){
+    stage=new Stage(20,20,"stage");
+    stage.initialize();
     gameStarted = 1;
     readStage();
     //startGame();
   }
+  if (open.length != 0){
+    var playerNum = open.pop();
+    inuse.push(playerNum);
+    var spawnjson = {'jsonType': "init", 'player_id': playerNum};
+    ws.send(JSON.stringify(spawnjson));
+    intializeNewPlayer(playerNum);
+    if (open.length == 0){
+      startGame();
+    }
+  }
+
+  //}
   //for(i=0;i<messages.length;i++){
 		//ws.send(messages[i]);
 	//}
 	ws.on('message', function(message) {
-		console.log(message);
 
 		// ws.send(message);
     var point=JSON.parse(message);
-    var t = point["x"];
-    console.log(t);
+    var direction = point["direction"];
+    var clientUsr = point["id"];
+    if(typeof stage.player[clientUsr] !== "undefined")
+    {
+      stage.player[clientUsr].move(stage, direction, clientUsr);
+      broadcastStage();
+    }
+
     //console.log(point);
-		wss.broadcast(stageJSON);
+
+		//wss.broadcast(stageJSON);
 	//	messages.push(message);
 	});
 });
 //game loop
+function intializeNewPlayer(playerNum){
 
+    var xCord = spawncord[playerNum][0];
+    var yCord = spawncord[playerNum][1];
+    new_player = new player("player", "player", xCord, yCord, playerNum)
+    stage.player.push(new_player);
+    //console.log(stage.player);
+    stage.setActor(new_player);
+}
 
 function setupGame(){
-  stage=new Stage(20,20,"stage");
-  stage.initialize();
+
   stage.loadLevel(level);
 //  $.get("static-content/stage/s1.txt", function(data) {
    //level = data.split('\n');
    //stage.loadLevel(level);
  //});
- startGame();
+
 }
 
 function readStage(){
-  var txtFile = "static-content/stage/s1.txt"
+  var txtFile = "static-content/stage/s2.txt"
   fs.readFile(txtFile, 'utf8', function(err, contents) {
       //console.log(contents);
       level = contents.split('\n');
+
       level.pop();
       setupGame();
   });
@@ -95,24 +125,36 @@ function readStage(){
  //});
 }
 function startGame(){
+
   broadcastStage();
-  gameStep = setInterval(function(){ mobsMove() }, interval);
+  var isIntervalInProgress = false;
+  setTimeout(mobsMove, 1000);
+
 }
 
 function mobsMove(){
-  console.log("tick once");
-  if (stage.step() == "win"){
-    pauseGame();
-    winner();
-    return;
-  }
-  else if (stage.step() == "gameover"){
-    gameover();
-    return;
-  }
-  broadcastStage();
-}
+    var d = new Date();
+    console.log(d.getSeconds());
+    var gameState = stage.step();
+    if (gameState == "win"){
+      var gg = {'jsonType': "gg", 'gameState': gameState};
+      wss.broadcast(JSON.stringify(gg));
+      return;
+    }
+    else if (gameState == "gameover"){
+      var gg = {'jsonType': "gg", 'gameState': gameState};
+      wss.broadcast(JSON.stringify(gg));
+      return;
+    }
 
+    broadcastStage();
+    setTimeout(mobsMove, 1000);
+
+
+
+}
+function winner(){
+}
 
 function broadcastStage(){
   var encodedStage = encodeStage();
@@ -129,7 +171,7 @@ function intialize_player(j, i){
 
 function Stage(width, height, stageElementID){
 	this.actors=[]; // all actors on this stage (monsters, player, boxes, ...)
-	this.player=null; // a special actor, the player
+	this.player=[]; // a special actor, the player
 	this.blanks=[];
 	this.monsters=[];
 	// the logical width and height of the stage
@@ -150,6 +192,7 @@ Stage.prototype.initialize=function(){
 		this.blanks[i] = new blank("blank", "blank", i%20, (i - (i%20))/20);
 		this.actors.push(this.blanks[i]);
 	}
+
 
 
 	// Add the player to the center of the stage
@@ -176,10 +219,6 @@ Stage.prototype.loadLevel=function(level){
 				this.monsters.push(newDevil);
 				this.setActor(newDevil);
 			}
-      if (inputline[j] == 'p'){
-        this.player = new player("player", "player", j, i, 1);
-        this.setActor(this.player);
-      }
 			if (inputline[j] == 's'){
 				newSlime = new slime("slime", "monster", j, i);
 				this.monsters.push(newSlime);
@@ -192,17 +231,26 @@ Stage.prototype.loadLevel=function(level){
 
 function encodeStage (){
   stageArray=[];
-
+  stage.actors[21].getName();
   for (var i = 0; i < 20; i++)
   {
     for (var j = 0; j < 20; j++){
-      var yLocation = j*20;
-    	var xLocation = i;
+      var yLocation = i*20;
+    	var xLocation = j;
 
     	var convertedLocation = yLocation + xLocation;
       switch (stage.actors[convertedLocation].getName()) {
         case "player":
-          stageArray.push("p");
+          var player_id = stage.actors[convertedLocation].player_id;
+          if (player_id == 0){
+            stageArray.push("p");
+          } else if (player_id == 1){
+            stageArray.push("2");
+          } else if (player_id == 2){
+            stageArray.push("3");
+          } else if (player_id == 3){
+            stageArray.push("4");
+          }
           break;
         case "devil":
           stageArray.push("d");
@@ -239,10 +287,13 @@ Stage.prototype.removeActor=function(actor){
 Stage.prototype.setActor=function(actor){
 	x = actor.getXCord();
 	y = actor.getYCord();
+
+
 	var yLocation = y*20;
 	var xLocation = x;
 	var convertedLocation = yLocation + xLocation;
-	this.actors[convertedLocation] = actor;
+	stage.actors[convertedLocation] = actor;
+
 }
 
 // Set the src of the image at stage location (x,y) to src
@@ -252,6 +303,7 @@ Stage.prototype.setImage=function(x, y, src){
 
 // Take one step in the animation of the game.
 Stage.prototype.step=function(){
+  console.log("game stepped");
 	if (this.monsters.length > 0){
 		for(var i=0;i<this.monsters.length;i++){
 			if (this.monsters[i].move(this) == "gameover"){
@@ -271,7 +323,46 @@ Stage.prototype.getActor=function(x, y){
 	var convertedLocation = yLocation + xLocation;
 	return this.actors[convertedLocation];
 }
+
+Stage.prototype.getNewDirectionCord=function(movingActor, direction){
+	switch (direction) {
+		case "north_west":
+			newXcord = movingActor.xCord - 1;
+			newYcord = movingActor.yCord - 1;
+			break;
+		case "north_east":
+			newXcord = movingActor.xCord + 1;
+			newYcord = movingActor.yCord - 1;
+			break;
+		case "north":
+			newXcord = movingActor.xCord;
+			newYcord = movingActor.yCord - 1;
+			break;
+		case "west":
+			newXcord = movingActor.xCord - 1;
+			newYcord = movingActor.yCord;
+			break;
+		case "east":
+			newXcord = movingActor.xCord + 1;
+			newYcord = movingActor.yCord;
+			break;
+		case "south_west":
+			newXcord = movingActor.xCord - 1;
+			newYcord = movingActor.yCord + 1;
+			break;
+		case "south_east":
+			newXcord = movingActor.xCord + 1;
+			newYcord = movingActor.yCord + 1;
+			break;
+		case "south":
+			newXcord = movingActor.xCord;
+			newYcord = movingActor.yCord + 1;
+			break;
+	}
+	return [newXcord, newYcord];
+}
 // End Class Stage
+
 
 // Start of actor Class
 function actor(name, type, xCord, yCord) {
@@ -364,7 +455,6 @@ devil.prototype.move=function(stage) {
 	if (this.checkStatus(stage) == 0){
 		return;
 	}
-
 	var validMoves = this.getValidMove(stage);
 	if (!Array.isArray(validMoves) || !validMoves.length) {
   	return;
@@ -373,11 +463,18 @@ devil.prototype.move=function(stage) {
   //console.log("move number is" + moveNumber)
 	var yLocation = this.yCord*20;
 	var xLocation = this.xCord;
+
 	var convertedLocation = yLocation + xLocation;
 	stage.setActor(stage.blanks[convertedLocation]);
 	if (stage.getActor(validMoves[moveNumber][0], validMoves[moveNumber][1]).getType() == "player"){
-		stage.player.status = 0;
-		return "gameover";
+      var index = stage.player.indexOf(stage.getActor(validMoves[moveNumber][0], validMoves[moveNumber][1]));
+      if (index > -1) {
+        stage.player.splice(index, 1);
+      }
+      console.log("player length" + stage.player.length );
+  		if (stage.player.length == 0){
+        return "gameover";
+      }
 	}
 	this.xCord = validMoves[moveNumber][0];
 	this.yCord = validMoves[moveNumber][1];
@@ -397,6 +494,15 @@ slime.prototype.move=function(stage) {
 	if (this.checkStatus(stage) == 0){
 		return;
 	}
+  if (slime_current_count == 0){
+    slime_current_count = slime_target_count;
+  }
+
+  if (slime_current_count == slime_target_count){
+
+
+    aggroTargetNum = Math.floor((Math.random() * (stage.player.length)));
+  }
 
 	var validMoves = this.getValidMove(stage);
 	if (!Array.isArray(validMoves) || !validMoves.length) {
@@ -404,29 +510,46 @@ slime.prototype.move=function(stage) {
 	}
 	var whichValidMove = [0,0];
 	var smallestDif = 9999;
-	for (var i = 0; i<validMoves.length; i++){
-		var differenceX = Math.abs(validMoves[i][0] - stage.player.getXCord());
-		var differenceY = Math.abs(validMoves[i][1] - stage.player.getYCord());
-		var  difference = Math.abs(differenceX + differenceY);
+  if(typeof stage.player[aggroTargetNum] == "undefined")
+  {
+    aggroTargetNum = Math.floor((Math.random() * (stage.player.length)));
+    validMoves = this.getValidMove(stage);
+  }
 
-		if (difference < smallestDif){
-			smallestDif = difference;
-			whichValidMove[0] =  validMoves[i][0];
-			whichValidMove[1] =  validMoves[i][1];
-		}
-	}
+    for (var i = 0; i<validMoves.length; i++){
+      var differenceX = Math.abs(validMoves[i][0] - stage.player[aggroTargetNum].getXCord());
+      var differenceY = Math.abs(validMoves[i][1] - stage.player[aggroTargetNum].getYCord());
+      var  difference = Math.abs(differenceX + differenceY);
+
+      if (difference < smallestDif){
+        smallestDif = difference;
+        whichValidMove[0] =  validMoves[i][0];
+        whichValidMove[1] =  validMoves[i][1];
+      }
+    }
+
+
+  slime_current_count--;
 	var yLocation = this.yCord*20;
 	var xLocation = this.xCord;
 	var convertedLocation = yLocation + xLocation;
 	stage.setActor(stage.blanks[convertedLocation]);
 	if (stage.getActor(whichValidMove[0], whichValidMove[1]).getType() == "player"){
-		stage.player.status = 0;
-		return "gameover";
+    var index = stage.player.indexOf(stage.getActor(whichValidMove[0], whichValidMove[1]));
+    if (index > -1) {
+      stage.player.splice(index, 1);
+    }
+    console.log("player length" + stage.player.length );
+		if (stage.player.length == 0){
+      return "gameover";
+    }
 	}
+
 	this.xCord = whichValidMove[0];
 	this.yCord = whichValidMove[1];
 	stage.setActor(this);
 }
+
 // End of slime Class
 // Start of wall Class
 function wall(name, type, xCord, yCord) {
@@ -476,14 +599,14 @@ box.prototype.attemptToMoveBox=function(stage, direction){
 }
 // End of box Class
 // Start of player Class
-function player(name, type, xCord, yCord, status) {
+function player(name, type, xCord, yCord, player_id) {
 	actor.call(this, name, type, xCord, yCord);
-	this.status = status;
+	this.player_id = player_id;
 }
 
 player.prototype = Object.create(actor.prototype);
 
-player.prototype.move=function(stage, direction){
+player.prototype.move=function(stage, direction, playerNum){
 	if(this.status == 0){
 		return "gameover";
 	}
@@ -509,9 +632,16 @@ player.prototype.move=function(stage, direction){
 			}
 			break;
 		case "monster":
-			this.status = 0;
-			return "gameover";
-			break;
+    aggroTargetNum = 0;
+    var index = stage.player.indexOf(this);
+      if (index > -1) {
+        stage.player.splice(index, 1);
+      }
+      console.log("player length" + stage.player.length );
+  		if (stage.player.length == 0){
+        return "gameover";
+      }
+			return "gameContinued";
 		case "blank":
 			move = 1;
 			break;
@@ -520,7 +650,7 @@ player.prototype.move=function(stage, direction){
 		this.xCord = newXcord;
 		this.yCord = newYcord;
 	}
-	stage.setActor(stage.player);
+	stage.setActor(this);
 	return "gameContinued";
 }
 
