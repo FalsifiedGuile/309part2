@@ -140,20 +140,43 @@ app.post('/api/getemail/:name/', function(req, res, next) {
 
 	// Connect to MongoDB.
 	MongoClient.connect(url, function(err, client) {
-	  assert.equal(null, err);
-	  const db = client.db(dbName);
+		assert.equal(null, err);
+		const db = client.db(dbName);
 
-	  // Checking User Existance.
-	  /*
-	  db.collection('users').update({name: username}, {$set: {pass: password, email: newemail}}, function(err, result) {
-	  	assert.equal(null, err);
-	  	var result = {};
-	  	result[req.body.name] = "updated rows";
-	  	console.log(JSON.stringify(result));
-		res.json(result);
-	  }); */
+		// Our collection const.
+		const collection = db.collection('users');
+		collection.find({name: username}).toArray(function(err, docs) {
+			assert.equal(err, null);
+			console.log(docs);
+			res.json(docs);
+		});
 
-	  client.close();
+		client.close();
+	});
+});
+
+// Post: Get Email.
+app.post('/api/getscore/:name/', function(req, res, next) {
+	// Passed in User Parameters.
+	var username = req.body.name;
+	// Console Log Description (Server/Terminal).
+	console.log("Post: Getting TopScore: "+username);
+
+	// Connect to MongoDB.
+	MongoClient.connect(url, function(err, client) {
+		assert.equal(null, err);
+		const db = client.db(dbName);
+
+		// Our collection const.
+		const collection = db.collection('scores');
+		//collection.find({name: username}).sort({age:-1}).limit(1).toArray(function(err, docs) {
+		collection.aggregate({ $group : { _id: null, max: { $max : "$age" }}}).toArray(function(err, docs){
+			assert.equal(err, null);
+			console.log(docs);
+			res.json(docs);
+		});
+		
+		client.close();
 	});
 });
 

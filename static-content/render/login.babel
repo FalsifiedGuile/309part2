@@ -1,9 +1,3 @@
-// Storage of Users in Global JS Dictionary.
-var users = {};
-// Pre-generated User for Checking & Debugging.
-users['nick'] = {'password': '123', 'email': '', 'scores': []};
-users['ray'] = {'password': 'dong', 'email': '', 'scores': [5, 2, 9]};
-
 class Register extends React.Component {
   constructor(props) {
     super(props);
@@ -124,7 +118,25 @@ class Main extends React.Component {
           contentType: 'application/json',
           data: JSON.stringify({ name: this.state.username }) 
       }).done(function(response){
- 
+          this.setState({email: response[0].email});
+      }.bind(this));
+
+      // Populate Top Score.
+      $.ajax({
+          url: '/api/getscore/'+this.state.username,
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ name: this.state.username }) 
+      }).done(function(response){
+          // To calculate max score.
+          var max = 0;
+          var i = 0;
+          for (i; i < response.length; i++) {
+            if (response[i].score > max) {
+              max = response[i].score;
+            }
+          }
+          this.setState({topscore: max});
       }.bind(this));
     }
   }
@@ -184,6 +196,10 @@ class Main extends React.Component {
     }.bind(this));
   }
 
+  toLobbyClick() {
+    alert("Boops");
+  }
+
   render(props) {
     // To save our current view state.
     var currentView;
@@ -195,6 +211,7 @@ class Main extends React.Component {
     var toLogin = null;
     var profileButton = null;
     var logoutButton = null;
+    var toLobby = null;
     var errorMessage = <input type="text" name="error" id="error" value = {this.state.msg} readOnly/>;
 
     // To swap between views based on state.
@@ -211,6 +228,7 @@ class Main extends React.Component {
     else if (this.state.view == 'profile') {
       currentView = <Profile username={this.state.username} hashpass={this.state.hashpass} email={this.state.email} score={this.state.topscore} onPassChange={this.onPassChange} onEmailChange={this.onEmailChange}/>;
       profileButton = <UpdateProfileButton onClick={this.profileClick} />;
+      toLobby = <ToLobby onClick={this.toLobbyClick} />;
       logoutButton = <LogoutButton onClick={this.toLoginClick} />;
     }
     else {
@@ -226,6 +244,7 @@ class Main extends React.Component {
           {registerButton}
           {toLogin}
           {profileButton}
+          {toLobby}
           {logoutButton} <br/><br/>
           {errorMessage}
         </div>
@@ -277,6 +296,14 @@ function LogoutButton(props) {
   return (
       <button onClick={props.onClick}>
         Logout
+      </button>
+    );
+}
+
+function ToLobby(props) {
+  return (
+      <button onClick={props.onClick}>
+        To Lobby
       </button>
     );
 }
