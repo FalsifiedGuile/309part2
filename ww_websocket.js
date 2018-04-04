@@ -19,6 +19,9 @@ var slime_target_count = 5;
 var slime_current_count = 5;
 var aggroTargetNum = 0;
 var ignore_move = false;
+var gameStartSec = 10;
+var score = 10000;
+var gameBegan = 0;
 
 // static_files has all of statically returned content
 // https://expressjs.com/en/starter/static-files.html
@@ -41,7 +44,16 @@ wss.broadcast = function(message){
 	// Alternatively
 	// this.clients.forEach(function (ws){ ws.send(message); });
 }
-
+function gameStartTimer(){
+  gameStartSec--;
+  if (gameStartSec > 0){
+      setTimeout(gameStartTimer, 1000);
+  }
+  if (gameStartSec == 0){
+    open = [];
+    startGame();
+  }
+}
 wss.on('connection', function(ws) {
   LOBBY.push(ws);
   //if (open.length <= 0){
@@ -66,6 +78,9 @@ wss.on('connection', function(ws) {
     }
   }
 
+  setTimeout(gameStartTimer, 1000);
+
+
   //}
   //for(i=0;i<messages.length;i++){
 		//ws.send(messages[i]);
@@ -76,7 +91,7 @@ wss.on('connection', function(ws) {
     var point=JSON.parse(message);
     var direction = point["direction"];
     var clientUsr = point["id"];
-    if(typeof stage.player[clientUsr] !== "undefined")
+    if(typeof stage.player[clientUsr] !== "undefined" && gameBegan == 1)
     {
       stage.player[clientUsr].move(stage, direction, clientUsr);
       broadcastStage();
@@ -125,7 +140,7 @@ function readStage(){
  //});
 }
 function startGame(){
-
+  gameBegan = 1;
   broadcastStage();
   var isIntervalInProgress = false;
   setTimeout(mobsMove, 1000);
@@ -137,16 +152,16 @@ function mobsMove(){
     console.log(d.getSeconds());
     var gameState = stage.step();
     if (gameState == "win"){
-      var gg = {'jsonType': "gg", 'gameState': gameState};
+      var gg = {'jsonType': "gg", 'gameState': gameState, 'score': score};
       wss.broadcast(JSON.stringify(gg));
       return;
     }
     else if (gameState == "gameover"){
-      var gg = {'jsonType': "gg", 'gameState': gameState};
+      var gg = {'jsonType': "gg", 'gameState': gameState, 'score': 0};
       wss.broadcast(JSON.stringify(gg));
       return;
     }
-
+    score = score - 50;
     broadcastStage();
     setTimeout(mobsMove, 1000);
 
