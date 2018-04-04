@@ -2,10 +2,16 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
+		<link rel="stylesheet" type="text/css" href="style.css">
 		<meta HTTP-EQUIV="EXPIRES" CONTENT="-1">
-		<title>Computing Science 309 Warehouse Wars</title>
+		<title>Warehouse Wars MMORPG</title>
 		<script language="javascript" src="jquery-3.3.1.min.js" > </script>
 		<script language="javascript" src="game_data/renderFinish.js" > </script>
+		<script src="lib/react.js"></script>
+		<script src="lib/react-dom.js"></script>
+		<script src="lib/babel.min.js"></script>
+
+		<script type="text/babel" src="render/login.babel"></script>
 
 		<script>
 		function renderStage(stageArray){
@@ -154,14 +160,13 @@
 	</head>
 	<body bgcolor="ffffff">
 		<center>
-			<h1>Warehouse Wars</h1>
-			<table>
+			<div id="Main"></div>
+			<table class = "ww">
 				<tr>
 					<td> <div id="stage"> </div></td>
 				</tr>
 			</table>
-			<h2>Legend</h2>
-			<table class="legend">
+			<table class="ww">
 				<tr>
 					<td> <img src="icons/blank.gif" id="blankImage" /> </td>
 					<td> <img src="icons/emblem-package-2-24.png" id="boxImage" /> </td>
