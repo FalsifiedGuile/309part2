@@ -1,0 +1,209 @@
+class Login extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {username: props.username, hashpass: props.hashpass};
+    this.changeUserField = this.changeUserField.bind(this);
+    this.changePassField = this.changePassField.bind(this);
+  }
+
+  changeUserField(e) {
+    this.setState({username: e.target.value});
+  }
+
+  changePassField(e) {
+    this.setState({password: e.target.value});
+  }
+
+  render(props) {
+    return (
+      <div>
+        <h3>Login</h3>
+        <form>
+          Username: <br/>
+          <input type="text" name="user" onChange={this.changeUserField} value ={this.state.username}/> <br/>
+          Password: <br/>
+          <input type="text" name="pass" onChange={this.changePassField} value ={this.state.hashpass}/> <br/><br/>
+        </form>
+      </div>
+    );
+  }
+}
+
+
+class Register extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render(props) {
+    return (
+      <div>
+        <h3>Register</h3>
+        <form>
+          Username: <br/>
+          <input type="text" name="user" value = ''/> <br/>
+          Password: <br/>
+          <input type="text" name="pass" value = ''/> <br/><br/>
+        </form>
+      </div>
+    );
+  }
+}
+
+
+class Profile extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render(props) {
+    return (
+      <div>
+        <h3>Profile</h3>
+        <form>
+          Username: <br/>
+          <input type="text" name="user" value = ''/> <br/>
+          Password: <br/>
+          <input type="text" name="pass" value = ''/> <br/>
+          Email: <br/>
+          <input type="text" name="pass" value = ''/> <br/>
+          Top Score: <br/>
+          <input type="text" name="pass" value = ''/> <br/><br/>
+        </form>
+      </div>
+    );
+  }
+}
+
+
+class Main extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {view: 'login', username: 'a', hashpass: 'a', email: '', topscore: ''};
+    this.loginClick = this.loginClick.bind(this);
+    this.toRegisterClick = this.toRegisterClick.bind(this);
+    this.registerClick = this.registerClick.bind(this);
+    this.toLoginClick = this.toLoginClick.bind(this);
+  }
+
+  loginClick() {
+    alert("Logged In!");
+  }
+
+  toRegisterClick() {
+    this.setState({view: 'register'});
+  }
+
+  registerClick() {
+    alert("Registered!");
+  }
+
+  toLoginClick() {
+    this.setState({view: 'login'});
+  }
+
+  profileClick() {
+    alert("Updated!");
+  }
+
+  changeUsername(newUser) {
+    this.setState({username: newUser});
+  }
+
+  render(props) {
+    // To save our current view state.
+    var currentView;
+
+    // Our assortment of buttons.
+    var loginButton = null;
+    var toRegister = null;
+    var registerButton = null;
+    var toLogin = null;
+    var profileButton = null;
+    var logoutButton = null;
+
+    // To swap between views based on state.
+    if (this.state.view == 'login') {
+      currentView = <Login username={this.state.username} hashpass={this.state.hashpass} changeUsername={this.changeUsername.bind(this)}/>;
+      loginButton = <LoginButton onClick={this.loginClick} />;
+      toRegister = <ToRegister onClick={this.toRegisterClick} />;
+    }
+    else if (this.state.view == 'register') {
+      currentView = <Register />;
+      registerButton = <RegisterButton onClick={this.registerClick} />;
+      toLogin = <ToLogin onClick={this.toLoginClick} />;
+    }
+    else if (this.state.view == 'profile') {
+      currentView = <Profile />;
+      profileButton = <UpdateProfileButton onClick={this.profileClick} />;
+      logoutButton = <LogoutButton onClick={this.toLoginClick} />;
+    }
+    else {
+      currentView = <Lobby />;
+    }
+
+    return (
+        <div>
+          <h3>Warehouse WARS MMMOG</h3>
+          {currentView}
+          {loginButton}
+          {toRegister}
+          {registerButton}
+          {toLogin}
+          {profileButton}
+          {logoutButton}
+        </div>
+      );
+  }
+}
+
+function LoginButton(props) {
+  return (
+      <button onClick={props.onClick}>
+        Login
+      </button>
+    );
+}
+
+function ToRegister(props) {
+  return (
+      <button onClick={props.onClick}>
+        To Register
+      </button>
+    );
+}
+
+function RegisterButton(props) {
+  return (
+      <button onClick={props.onClick}>
+        Register
+      </button>
+    );
+}
+
+function ToLogin(props) {
+  return (
+      <button onClick={props.onClick}>
+        To Login
+      </button>
+    );
+}
+
+function UpdateProfileButton(props) {
+  return (
+      <button onClick={props.onClick}>
+        Update Profile
+      </button>
+    );
+}
+
+function LogoutButton(props) {
+  return (
+      <button onClick={props.onClick}>
+        Logout
+      </button>
+    );
+}
+
+ReactDOM.render( <Main />, document.getElementById("Main"));
+

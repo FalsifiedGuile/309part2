@@ -1,0 +1,71 @@
+Features: For each feature you implement, move to the Implemented section and
+explain who did it (utorid) and how you did it. You can consider these as
+almost user stories, if you just add a bit to them. Add more features/user stories at the bottom.
+Move them up when completed.
+
+------------------------------------------------------------------------------------
+Implemented:
+------------------------------------------------------------------------------------
+0) Login
+   Done by: choinic1
+   Explanation: uses sqlite3, restful.api, ajax, json to check information in database and login if possible.
+
+01) Register
+    Done by: choinic1
+    Explanation: uses sqlite3, restful.api, ajax, json to add information to database if possible.
+
+02) CSS: Cool looking mouse cursor, nice table, cool banner
+    Done by: tongxinr, choinic1
+    Explanation: made things look presentable although still kind of 2000.
+
+03) Profile: Able to modify username, password, and delete your own account.
+    Done by: choinic1
+    Explanation: not really page token per say, but a combination of using buttons and _POST as redirect
+
+04) Excellent use of sqlite3 database schemas
+    Done by: choinic1
+    Explanation: Used amazing schemas in sqlite3
+
+05) Highscore Table: Lists the top 10 users scores
+    Done by: choinic1
+    Explanation: Uses sqlite3 to store information of score upon winning the game, does not log
+    score if player loses
+
+06) Winner and Gameover screen: Shows appropriate screens when conditions are met
+    Done by: tongxinr
+    Explanation: Wins when all monsters are killed via surrounding them by boxes and/or walls
+    Loses when monster touches player or vice versa.
+
+07) New type of monster (slime)
+    Done by: tongxinr
+    Explanation: Created a more intelligent monster that aggros onto the player i.e. tries to follow the player
+
+08) Keyboard controls
+    Done by: tongxinr
+    Explanation:
+    q-NW w-N e-NE
+    a-E  s-  d-W
+    z-SW x-S c-SE
+
+09) Customizable stage
+    Done by: tongxinr
+    Explanation: can make your own stage by static-contents/stage/[yourstagename].txt just follow the 20x20 grid
+    And use 's' for slime 'd' for devil 'p' for player 'b' for box 'x' for wall and ' ' for blank
+
+10) Logout
+    Done by: Both Students
+    Explanation: can logout from the game
+
+11) Debug stage
+    Done by: tongxinr
+    Explanation: on index.html line 24 change "stage/s1.txt" to "stage/s2.txt" for debugging.
+
+12) User Managment: Implement a user managment system with a RESTful api. Your api should support Account creation, update, delete and read via the appropriate
+    http verbs POST, GET, PUT, DELETE. You should record users scores.
+    Done by: choinic1
+    Explanation: support user authentication, authorize each request, stored in sqlite3 database, response from API is JSON
+    store and retrieve users scores from database.
+
+13) Index.html: single index.html which includes Javascript, JQuery, CSS etc. It has many different views.
+    Done by: both memembers
+    Explanation: uses model view controller to first hide all elements and only display them when they should

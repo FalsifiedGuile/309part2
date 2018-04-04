@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta HTTP-EQUIV="EXPIRES" CONTENT="-1">
+		<title>Computing Science 309 Warehouse Wars</title>
+		<script language="javascript" src="jquery-3.3.1.min.js" > </script>
+		<script language="javascript" src="game_data/move.js" > </script>
+
+		<script>
+		function renderStage(stageArray){
+			var img = document.createElement("img");
+			var tableBody = $(document.createElement('tbody'));
+			var row = $(document.createElement('tr'));
+			//Create a prototype of the type of cell we want
+			//In each cell we shall display the text "Cell"
+			for (var i = 0; i < 20; i++)
+			{
+				var newRow = row.clone();
+				tableBody.append(newRow);
+				for (var j = 0; j < 20; j++){
+					//console.log(stage.getActor(j, i).getName());
+					var yLocation = i*20;
+					var xLocation = j;
+					var convertedLocation = yLocation + xLocation;
+					switch(stageArray[convertedLocation]){
+						case "p":
+							img.src = document.getElementById('playerImage').src;
+							break;
+						case "d":
+							img.src = document.getElementById('monsterImage').src;
+							break;
+						case "w":
+							img.src = document.getElementById('wallImage').src;
+							break;
+						case "b":
+							img.src = document.getElementById('boxImage').src;
+							break;
+						case "s":
+							img.src = document.getElementById('slimeImage').src;
+							break;
+						default:
+							img.src = document.getElementById('blankImage').src;
+							break;
+
+					}
+
+					if(img && img.style) {
+							img.style.height = '40px';
+							img.style.width = '40px';
+					}
+					var cell = $(document.createElement('td')).html(img);
+					newRow.append(cell.clone());
+				}
+				console.log("done");
+			}
+			$('#stage').html(tableBody);
+		}
+
+		</script>
+		<script type="text/javascript">
+			var minNumber = 0;
+			var maxNumber = 1000;
+			var socket;
+
+			var usr_id = randomNumberFromRange(minNumber, maxNumber);
+			function randomNumberFromRange(min,max)
+			{
+			    return Math.floor(Math.random()*(max-min+1)+min);
+			}
+			console.log(usr_id);
+
+
+
+			$(function(){
+				// socket = new WebSocket("ws://cslinux.utm.utoronto.ca:10001");
+				socket = new WebSocket("ws://localhost:10311");
+				socket.onopen = function (event) {
+					$('#sendButton').removeAttr('disabled');
+					console.log("connected");
+				};
+				socket.onclose = function (event) {
+					alert("closed code:" + event.code + " reason:" +event.reason + " wasClean:"+event.wasClean);
+				};
+				socket.onmessage = function (event) {
+					var jsonStage=JSON.parse(event.data);
+					var stageArray = jsonStage.stage;
+					renderStage(stageArray);
+					//var context = document.getElementById('theCanvas').getContext('2d');
+					//context.fillStyle = 'rgba(255,0,0,1)';
+		   			//context.fillRect(point.x, point.y, 2, 2);
+				}
+				//$('#theCanvas').mousemove(function(event){
+					//var x=event.pageX-this.offsetLeft;
+					//var y=event.pageY-this.offsetTop;
+					//socket.send(JSON.stringify({ 'x': x, 'y': y} ));
+				//});
+				document.addEventListener('keydown', function(event) {
+					var newCord = [];
+					var xyCord = [0, 0]
+					switch(event.keyCode){
+						case 100:
+							newCord = getNewDirectionCord("west", xyCord);
+							break;
+						case 102:
+							newCord = getNewDirectionCord("east", xyCord);
+							break;
+						case 104:
+							newCord = getNewDirectionCord("north", xyCord);
+							break;
+						case 98:
+							newCord = getNewDirectionCord("south", xyCord);
+							break;
+						case 103:
+							newCord = getNewDirectionCord("north_west", xyCord);
+							break;
+						case 105:
+							newCord = getNewDirectionCord("north_east", xyCord);
+							break;
+						case 97:
+							newCord = getNewDirectionCord("south_west", xyCord);
+							break;
+						case 99:
+							newCord = getNewDirectionCord("south_east", xyCord);
+							break;
+						default:
+							return;
+					}
+					var x = newCord[0];
+					var y = newCord[1];
+					socket.send(JSON.stringify({ 'x': x, 'y': y, 'id':usr_id}));
+				});
+
+			});
+		</script>
+	</head>
+	<body bgcolor="ffffff">
+		<center>
+			<h1>Warehouse Wars</h1>
+			<table>
+				<tr>
+					<td> <div id="stage"> </div></td>
+					<td>
+						<center>
+							<h2>Legend</h2>
+							<table class="legend">
+								<tr>
+									<td> <img src="icons/blank.gif" id="blankImage" /> </td>
+									<td> <img src="icons/emblem-package-2-24.png" id="boxImage" /> </td>
+									<td> <img src="icons/face-cool-24.png" id="playerImage" /> </td>
+									<td> <img src="icons/face-devil-grin-24.png" id="monsterImage" /> </td>
+									<td> <img src="icons/slime.png" id="slimeImage" /> </td>
+									<td> <img src="icons/wall.jpeg" id="wallImage" /> </td>
+								</tr>
+								<tr>
+									<td> Empty <br/> Square </td>
+									<td> Box </td>
+									<td> Player </td>
+									<td> Devil </td>
+									<td> Slime </td>
+									<td> Wall </td>
+								</tr>
+							</table>
+							<h2>Controls</h2>
+							<table class="controls">
+								<tr>
+									<td><img src="icons/north_west.svg" onclick="move_north_west();" /></td>
+									<td><img src="icons/north.svg" onclick="move_north()"/></td>
+									<td><img src="icons/north_east.svg" onclick="move_north_east();"  /></td>
+								</tr>
+								<tr>
+									<td><img src="icons/west.svg" onclick="move_west();"  /></td>
+									<td>&nbsp;</td>
+									<td><img src="icons/east.svg" onclick="move_east();"  /></td>
+								</tr>
+								<tr>
+									<td><img src="icons/south_west.svg" onclick="move_south_west();"  /></td>
+									<td><img src="icons/south.svg" onclick="move_south();"  /></td>
+									<td><img src="icons/south_east.svg" onclick="move_south_east();"  /></td>
+								</tr>
+							</table>
+						</center>
+					</td>
+				</tr>
+			</table>
+		</center>
+	</body>
+</html>
