@@ -83,9 +83,15 @@
 					alert("closed code:" + event.code + " reason:" +event.reason + " wasClean:"+event.wasClean);
 				};
 				socket.onmessage = function (event) {
-					var jsonStage=JSON.parse(event.data);
-					var stageArray = jsonStage.stage;
-					renderStage(stageArray);
+					var jsonThing=JSON.parse(event.data);
+					if (jsonThing.jsonType == 'stage'){
+						var stageArray = jsonThing.stage;
+						renderStage(stageArray);
+					}
+					if (jsonThing.jsonType == 'init') {
+						console.log("USER spawn: " + jsonThing.player_location);
+					}
+
 					//var context = document.getElementById('theCanvas').getContext('2d');
 					//context.fillStyle = 'rgba(255,0,0,1)';
 		   			//context.fillRect(point.x, point.y, 2, 2);
