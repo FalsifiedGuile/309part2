@@ -27,11 +27,47 @@ function gameover(){
 	}
 	$('#stage').html(img);
 }
-function uploadScore(score){
-
+function uploadScore(username, score){
+    $.ajax({
+        url: '/api/createscore/'+username,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ name: username, score: score }),
+        success: function(response) {
+            console.log(JSON.stringify(response));
+        }
+    });
 }
+Add this to ww_node.js with other posts:
+// Post: Creating Score.
+app.post('/api/createscore/:name/', function(req, res, next) {
+    // Passed in User Parameters.
+    var item = {
+        name: req.body.name,
+        score: req.body.score
+    };
+    // Console Log Description (Server/Terminal).
+    console.log("Post: Creating Score: "+req.body.name+","+req.body.score);
+
+    // Connect to MongoDB.
+    MongoClient.connect(url, function(err, client) {
+      assert.equal(null, err);
+      const db = client.db(dbName);
+
+      // Insert User.
+      db.collection('scores').insertOne(item, function(err, result) {
+          assert.equal(null, err);
+          var result = {};
+          result[req.body.name] = "updated rows";
+          console.log(JSON.stringify(result));
+        res.json(result);
+      });
+
+      client.close();
+    });
+});
 function winner(){
-  uploadScore(score);
+  uploadScore(username, score);
   document.getElementById("score").innerHTML = jsonThing.score;
 	var img = document.createElement("img");
 	img.src = "http://i.imgur.com/rkxeQPC.gif";
