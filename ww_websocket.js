@@ -92,10 +92,8 @@ wss.on('connection', function(ws) {
 		// ws.send(message);
     var point=JSON.parse(message);
     if (point.jsonType == 'direction'){
-
       var direction = point["direction"];
       var clientUsr = point["id"];
-      console.log(direction + " point x: " + point['x'] + " point y: " + point['y']);
       var index = stage.player.indexOf(players[clientUsr]);
       if (index > -1 && gameBegan == 1) {
         if (players[clientUsr].move(stage, direction, clientUsr) == "gameover"){
@@ -115,8 +113,24 @@ wss.on('connection', function(ws) {
         }
       }
     }
+    if (point.jsonType == 'redSlime'){
+
+      movedslime = 1;
+    }
 	});
 });
+var movedslime = 0;
+
+function timerMethod() {
+
+    if (movedslime == 1){
+      moveRedSlime();
+    } else {
+      console.log("redslimes didnt move");
+    }
+    movedslime = 0;
+}
+var timerId = setInterval(timerMethod, 500);
 
 function gameOver(){
   var gg = {'jsonType': "gg", 'gameState': "gameover", 'score': score};
@@ -124,7 +138,21 @@ function gameOver(){
   gameBegan = 0;
 }
 function moveRedSlime(){
-
+  console.log("redslime moved");
+  if (stage.redSlimes.length > 0){
+    for(var i=0;i<stage.redSlimes.length;i++){
+      var slimeStatus = stage.redSlimes[i].move(stage);
+      if (slimeStatus == "dead"){
+        var index = stage.redSlimes.indexOf(stage.redSlimes[i]);
+        if (index > -1) {
+          stage.redSlimes.splice(index, 1);
+        }
+      }
+      if ( slimeStatus == "gameover"){
+        return "gameover";
+      }
+    }
+  }
 }
 
 function removePlayerFromStage(player){
@@ -231,6 +259,7 @@ function Stage(width, height, stageElementID){
 	this.player=[]; // a special actor, the player
 	this.blanks=[];
 	this.monsters=[];
+  this.redSlimes=[];
 	// the logical width and height of the stage
 	this.width=width;
 	this.height=height;
@@ -271,6 +300,12 @@ Stage.prototype.loadLevel=function(level){
 				newBox = new box("box", "box", j, i);
 				this.setActor(newBox);
 			}
+      if (inputline[j] == 'r'){
+        newRedslime = new redSlime("redSlime", "monster", j, i);
+        this.monsters.push(newRedslime);
+        this.redSlimes.push(newRedslime);
+        this.setActor(newRedslime);
+      }
 			if (inputline[j] == 'd'){
 				newDevil = new devil("devil", "monster", j, i);
 				this.monsters.push(newDevil);
@@ -288,7 +323,6 @@ Stage.prototype.loadLevel=function(level){
 
 function encodeStage (){
   stageArray=[];
-  stage.actors[21].getName();
   for (var i = 0; i < 20; i++)
   {
     for (var j = 0; j < 20; j++){
@@ -312,6 +346,9 @@ function encodeStage (){
         case "devil":
           stageArray.push("d");
           break;
+        case "redSlime":
+          stageArray.push("r");
+          break;
         case "wall":
           stageArray.push("w");
           break;
@@ -328,7 +365,7 @@ function encodeStage (){
 
     }
   }
-  var stageJSON = {'jsonType': "stage", "stage":stageArray};
+  var stageJSON = {'jsonType': "stage", "stage":stageArray, "score":score};
   return stageJSON;
 }
 
@@ -509,7 +546,7 @@ devil.prototype = Object.create(mob.prototype);
 
 devil.prototype.move=function(stage) {
 	if (this.checkStatus(stage) == 0){
-		return;
+		return "dead";
 	}
 	var validMoves = this.getValidMove(stage);
 	if (!Array.isArray(validMoves) || !validMoves.length) {
@@ -540,7 +577,7 @@ devil.prototype.move=function(stage) {
 // End of devil Class
 // Start of Red slime Class
 function redSlime(name, type, xCord, yCord, status) {
-	redSlime.call(this, name, type, xCord, yCord, status);
+	devil.call(this, name, type, xCord, yCord, status);
 }
 redSlime.prototype = Object.create(devil.prototype);
 

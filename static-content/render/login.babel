@@ -15,12 +15,9 @@ function sendCloseConn() {
     socket.send(JSON.stringify({'jsonType':'closeConn','id':usr_id}));
 }
 
-function gyroscope() {
-    socket.send(JSON.stringify({'jsonType':'closeConn','id':usr_id}));
-}
-
 function gameover(){
   console.log("reached gameover");
+  document.getElementById("score").innerHTML = jsonThing.score;
 	var img = document.createElement("img");
 	img.src = "http://moziru.com/images/deadth-clipart-transparent-14.png";
 	if(img && img.style) {
@@ -34,6 +31,7 @@ function uploadScore(score){
 }
 function winner(){
   uploadScore(score);
+  document.getElementById("score").innerHTML = jsonThing.score;
 	var img = document.createElement("img");
 	img.src = "http://i.imgur.com/rkxeQPC.gif";
 	if(img && img.style) {
@@ -135,6 +133,7 @@ function lobby(){
 					if (jsonThing.jsonType == 'stage'){
 						var stageArray = jsonThing.stage;
 						renderStage(stageArray);
+            document.getElementById("score").innerHTML = jsonThing.score;
 					}
 					if (jsonThing.jsonType == 'init') {
 						//console.log("USER spawn: " + jsonThing.player_id);
