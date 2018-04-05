@@ -1,3 +1,4 @@
+var username = null;
 var minNumber = 0;
 var maxNumber = 1000;
 var socket;
@@ -11,9 +12,7 @@ function handleOrientation(event) {
 
   // Do stuff with the new orientation data
 }
-function (){
 
-}
 window.onbeforeunload = sendCloseConn;
 function sendCloseConn() {
     socket.send(JSON.stringify({'jsonType':'closeConn','id':usr_id}));
@@ -296,6 +295,8 @@ class Main extends React.Component {
     }
     // Otherwise, we query to MongoDB.
     else {
+    	username = this.state.username;
+    	alert(''+username);
       // Login Route.
       $.ajax({
           url: '/api/login/'+this.state.username,
