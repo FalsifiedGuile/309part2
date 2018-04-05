@@ -49,6 +49,34 @@ app.post('/api/checkuser/:name/', function(req, res, next) {
 	});
 });
 
+// Post: Creating Score.
+app.post('/api/createscore/:name/', function(req, res, next) {
+	// Passed in User Parameters.
+	var item = {
+		name: req.body.name,
+		score: req.body.score
+	};
+	// Console Log Description (Server/Terminal).
+	console.log("Post: Creating Score: "+req.body.name+","+req.body.score);
+
+	// Connect to MongoDB.
+	MongoClient.connect(url, function(err, client) {
+	  assert.equal(null, err);
+	  const db = client.db(dbName);
+
+	  // Insert User.
+	  db.collection('scores').insertOne(item, function(err, result) {
+	  	assert.equal(null, err);
+	  	var result = {};
+	  	result[req.body.name] = "updated rows";
+	  	console.log(JSON.stringify(result));
+		res.json(result);
+	  });
+
+	  client.close();
+	});
+});
+
 // Post: Logging In.
 app.post('/api/login/:name/', function(req, res, next) {
 	// Passed in User Parameters.

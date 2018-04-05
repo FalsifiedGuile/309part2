@@ -1,8 +1,8 @@
-var username = null;
 var minNumber = 0;
 var maxNumber = 1000;
 var socket;
 var usr_id = -1;
+
 window.addEventListener("deviceorientation", handleOrientation, true);
 function handleOrientation(event) {
   var absolute = event.absolute;
@@ -12,6 +12,9 @@ function handleOrientation(event) {
 
   // Do stuff with the new orientation data
 }
+
+var score;
+var username = null;
 
 window.onbeforeunload = sendCloseConn;
 function sendCloseConn() {
@@ -32,8 +35,16 @@ function gameover(){
 	}
 	$('#stage').html(img);
 }
-function uploadScore(score){
-
+function uploadScore(username, score){
+    $.ajax({
+        url: '/api/createscore/'+username,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ name: username, score: score }),
+        success: function(response) {
+            console.log(JSON.stringify(response));
+        }
+    });
 }
 function winner(){
   uploadScore(score);
@@ -124,6 +135,7 @@ function lobby(){
 						console.log(jsonThing);
 						console.log("score: " + jsonThing.score);
 						var score = jsonThing.score;
+						score = jsonThing.score;
 						var gameState = jsonThing.gameState;
 						if (gameState == "win"){
 							winner();
@@ -177,7 +189,51 @@ function lobby(){
 					socket.send(JSON.stringify({'jsonType':'direction', 'direction': newCord, 'id':usr_id}));
 				});
 
+
 			});
+
+        window.addEventListener("deviceorientation", handleOrientation, true);
+        function handleOrientation(event) {
+          var y     = event.beta;
+          var x    = event.gamma;
+
+          // Do stuff with the new orientation data
+          if (x >  90) { x =  90};
+          if (x < -90) { x = -90};
+          var time;
+          if (usr_id  >= 0){
+            if (x > 15 && y > 15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("south_east", x , y),1000);
+            } else if (x < -15 && y < -15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("north_west", x , y),1000);
+            } else if (x < -15 && y > 15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("south_west", x , y),1000);
+            } else if (x > 15 && y < -15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("north_east", x , y),1000);
+            } else if (x > 15 && (y< 15 && y > -15)){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("east", x , y),1000);
+            } else if (x < -15 && (y < 15 && y > -15)){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("west", x , y),1000);
+            } else if ((x < 15 && x > -15) && y < -15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("north", x , y),1000);
+            } else if ((x < 15 && x > -15) && y > 15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("south", x , y),1000);
+            }
+          }
+
+        }
+			
+      function sendMobileMovement(direction, x, y){
+        socket.send(JSON.stringify({'jsonType':'direction', 'direction': direction, 'id':usr_id, 'x': x, 'y': y}));
+      }
 }
 
 class Register extends React.Component {
@@ -295,8 +351,6 @@ class Main extends React.Component {
     }
     // Otherwise, we query to MongoDB.
     else {
-    	username = this.state.username;
-    	alert(''+username);
       // Login Route.
       $.ajax({
           url: '/api/login/'+this.state.username,
