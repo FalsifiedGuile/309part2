@@ -4,6 +4,11 @@ var socket;
 var usr_id = -1;
 
 var score;
+function round(a){
+    // return Math.round(100*a)/100;
+    return Math.round(a);
+  }
+
 
 window.onbeforeunload = sendCloseConn;
 function sendCloseConn() {
@@ -40,6 +45,7 @@ function winner(){
 
 
 function renderStage(stageArray){
+  console.log(stageArray);
   var img = document.createElement("img");
   var tableBody = $(document.createElement('tbody'));
   var row = $(document.createElement('tr'));
@@ -69,6 +75,9 @@ function renderStage(stageArray){
           break;
         case "s":
           img.src = document.getElementById('slimeImage').src;
+          break;
+        case "r":
+          img.src = document.getElementById('RedSlimeImage').src;
           break;
         case "2":
           img.src = document.getElementById('player2').src;
@@ -168,11 +177,28 @@ function lobby(){
 					}
 					socket.send(JSON.stringify({'jsonType':'direction', 'direction': newCord, 'id':usr_id}));
 				});
+        function round(a){
+          // return Math.round(100*a)/100;
+          return Math.round(a);
+        }
+        window.addEventListener('devicemotion', function(ev) {
+                          var acc = ev.acceleration;
+                          dmHdlr(round(acc.x), round(acc.y), round(acc.z));
+                        }, false);
+        function dmHdlr(ax, ay, az) {
+            if (socket !== undefined){
+              if (ax > 8 || ay > 8 || az >8){
+                socket.send(JSON.stringify({'jsonType':'redSlime'}));
+              }
+            }
+        }
+
         window.addEventListener("deviceorientation", handleOrientation, true);
         function handleOrientation(event) {
           var y     = event.beta;
           var x    = event.gamma;
-
+          document.getElementById("motion").innerHTML =
+                  "a=(x + "," + y)";
           // Do stuff with the new orientation data
           if (x >  90) { x =  90};
           if (x < -90) { x = -90};
