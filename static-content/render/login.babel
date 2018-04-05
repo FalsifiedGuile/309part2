@@ -2,18 +2,9 @@ var minNumber = 0;
 var maxNumber = 1000;
 var socket;
 var usr_id = -1;
-window.addEventListener("deviceorientation", handleOrientation, true);
-function handleOrientation(event) {
-  var absolute = event.absolute;
-  var alpha    = event.alpha;
-  var beta     = event.beta;
-  var gamma    = event.gamma;
 
-  // Do stuff with the new orientation data
-}
-function (){
+var score;
 
-}
 window.onbeforeunload = sendCloseConn;
 function sendCloseConn() {
     socket.send(JSON.stringify({'jsonType':'closeConn','id':usr_id}));
@@ -124,7 +115,7 @@ function lobby(){
 					if (jsonThing.jsonType == 'gg') {
 						console.log(jsonThing);
 						console.log("score: " + jsonThing.score);
-						var score = jsonThing.score;
+						score = jsonThing.score;
 						var gameState = jsonThing.gameState;
 						if (gameState == "win"){
 							winner();
@@ -177,8 +168,48 @@ function lobby(){
 					}
 					socket.send(JSON.stringify({'jsonType':'direction', 'direction': newCord, 'id':usr_id}));
 				});
+        window.addEventListener("deviceorientation", handleOrientation, true);
+        function handleOrientation(event) {
+          var y     = event.beta;
+          var x    = event.gamma;
 
+          // Do stuff with the new orientation data
+          if (x >  90) { x =  90};
+          if (x < -90) { x = -90};
+          var time;
+          if (usr_id  >= 0){
+            if (x > 15 && y > 15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("south_east", x , y),1000);
+            } else if (x < -15 && y < -15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("north_west", x , y),1000);
+            } else if (x < -15 && y > 15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("south_west", x , y),1000);
+            } else if (x > 15 && y < -15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("north_east", x , y),1000);
+            } else if (x > 15 && (y< 15 && y > -15)){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("east", x , y),1000);
+            } else if (x < -15 && (y < 15 && y > -15)){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("west", x , y),1000);
+            } else if ((x < 15 && x > -15) && y < -15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("north", x , y),1000);
+            } else if ((x < 15 && x > -15) && y > 15){
+              clearInterval(time);
+              time=setInterval(sendMobileMovement("south", x , y),1000);
+            }
+          }
+
+        }
 			});
+      function sendMobileMovement(direction, x, y){
+        socket.send(JSON.stringify({'jsonType':'direction', 'direction': direction, 'id':usr_id, 'x': x, 'y': y}));
+      }
 }
 
 class Register extends React.Component {

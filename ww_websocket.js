@@ -19,7 +19,7 @@ var slime_target_count = 5;
 var slime_current_count = 5;
 var aggroTargetNum = 0;
 var ignore_move = false;
-var gameStartSec = 10;
+var gameStartSec = 5;
 var score = 10000;
 var gameBegan = 0;
 var players = [];
@@ -92,9 +92,10 @@ wss.on('connection', function(ws) {
 		// ws.send(message);
     var point=JSON.parse(message);
     if (point.jsonType == 'direction'){
-        console.log("direction");
+
       var direction = point["direction"];
       var clientUsr = point["id"];
+      console.log(direction + " point x: " + point['x'] + " point y: " + point['y']);
       var index = stage.player.indexOf(players[clientUsr]);
       if (index > -1 && gameBegan == 1) {
         if (players[clientUsr].move(stage, direction, clientUsr) == "gameover"){
@@ -123,7 +124,7 @@ function gameOver(){
   gameBegan = 0;
 }
 function moveRedSlime(){
-  
+
 }
 
 function removePlayerFromStage(player){
@@ -190,13 +191,14 @@ function mobsMove(){
     if (gameBegan == 0){return;}
     var d = new Date();
     var gameState = stage.step();
-    console.log("game state" + gameState);
     if (gameState == "win"){
+      gameBegan = 0;
       var gg = {'jsonType': "gg", 'gameState': gameState, 'score': score};
       wss.broadcast(JSON.stringify(gg));
       return;
     }
     else if (gameState == "gameover"){
+      gameBegan = 0;
       var gg = {'jsonType': "gg", 'gameState': gameState, 'score': 0};
       wss.broadcast(JSON.stringify(gg));
       return;
