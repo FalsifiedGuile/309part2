@@ -122,6 +122,9 @@ function gameOver(){
   wss.broadcast(JSON.stringify(gg));
   gameBegan = 0;
 }
+function moveRedSlime(){
+  
+}
 
 function removePlayerFromStage(player){
   var yLocation = player.yCord*20;
@@ -533,6 +536,11 @@ devil.prototype.move=function(stage) {
 	stage.setActor(this);
 }
 // End of devil Class
+// Start of Red slime Class
+function redSlime(name, type, xCord, yCord, status) {
+	redSlime.call(this, name, type, xCord, yCord, status);
+}
+redSlime.prototype = Object.create(devil.prototype);
 
 // Start of slime Class
 function slime(name, type, xCord, yCord, status) {
