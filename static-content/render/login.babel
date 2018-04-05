@@ -3,18 +3,7 @@ var maxNumber = 1000;
 var socket;
 var usr_id = -1;
 
-window.addEventListener("deviceorientation", handleOrientation, true);
-function handleOrientation(event) {
-  var absolute = event.absolute;
-  var alpha    = event.alpha;
-  var beta     = event.beta;
-  var gamma    = event.gamma;
-
-  // Do stuff with the new orientation data
-}
-
 var score;
-var username = null;
 
 window.onbeforeunload = sendCloseConn;
 function sendCloseConn() {
@@ -35,16 +24,8 @@ function gameover(){
 	}
 	$('#stage').html(img);
 }
-function uploadScore(username, score){
-    $.ajax({
-        url: '/api/createscore/'+username,
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({ name: username, score: score }),
-        success: function(response) {
-            console.log(JSON.stringify(response));
-        }
-    });
+function uploadScore(score){
+
 }
 function winner(){
   uploadScore(score);
@@ -134,7 +115,6 @@ function lobby(){
 					if (jsonThing.jsonType == 'gg') {
 						console.log(jsonThing);
 						console.log("score: " + jsonThing.score);
-						var score = jsonThing.score;
 						score = jsonThing.score;
 						var gameState = jsonThing.gameState;
 						if (gameState == "win"){
@@ -188,10 +168,6 @@ function lobby(){
 					}
 					socket.send(JSON.stringify({'jsonType':'direction', 'direction': newCord, 'id':usr_id}));
 				});
-
-
-			});
-
         window.addEventListener("deviceorientation", handleOrientation, true);
         function handleOrientation(event) {
           var y     = event.beta;
@@ -230,7 +206,7 @@ function lobby(){
           }
 
         }
-			
+			});
       function sendMobileMovement(direction, x, y){
         socket.send(JSON.stringify({'jsonType':'direction', 'direction': direction, 'id':usr_id, 'x': x, 'y': y}));
       }
